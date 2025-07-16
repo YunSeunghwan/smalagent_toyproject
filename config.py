@@ -65,20 +65,30 @@ class Config:
         print(f"  기본 모델: {cls.DEFAULT_MODEL}")
         
         if cls.GEMINI_API_KEY:
-            print(f"  Gemini API 키: {'*' * 10 + cls.GEMINI_API_KEY[-4:]}")
+            masked_key = cls._mask_api_key(cls.GEMINI_API_KEY)
+            print(f"  Gemini API 키: {masked_key}")
             print(f"  Gemini 모델: {cls.GEMINI_MODEL}")
         else:
             print("  Gemini API 키: 설정되지 않음")
         
         if cls.OPENAI_API_KEY:
-            print(f"  OpenAI API 키: {'*' * 10 + cls.OPENAI_API_KEY[-4:]}")
+            masked_key = cls._mask_api_key(cls.OPENAI_API_KEY)
+            print(f"  OpenAI API 키: {masked_key}")
             print(f"  OpenAI 모델: {cls.OPENAI_MODEL}")
         else:
             print("  OpenAI API 키: 설정되지 않음")
         
         if cls.OPENWEATHER_API_KEY:
-            print(f"  OpenWeather API 키: {'*' * 10 + cls.OPENWEATHER_API_KEY[-4:]}")
+            masked_key = cls._mask_api_key(cls.OPENWEATHER_API_KEY)
+            print(f"  OpenWeather API 키: {masked_key}")
         else:
             print("  OpenWeather API 키: 설정되지 않음")
         
-        print() 
+        print()
+    
+    @staticmethod
+    def _mask_api_key(api_key):
+        """API 키를 마스킹하여 보안 강화"""
+        if len(api_key) <= 8:
+            return '*' * len(api_key)
+        return '*' * (len(api_key) - 8) + api_key[-8:] 
