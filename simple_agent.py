@@ -1,14 +1,23 @@
 import os
 from dotenv import load_dotenv
-from smolagents import CodeAgent, Tool, InferenceClientModel
+from smolagents import CodeAgent, InferenceClientModel
+from smolagents.tools import tool
 from config import Config
 import re
 
 # 환경 변수 로드
 load_dotenv()
 
-def calculate(expression):
-    """수학 표현식을 계산하는 도구"""
+@tool
+def calculate(expression: str) -> str:
+    """수학 표현식을 계산하는 도구
+    
+    Args:
+        expression: 계산할 수학 표현식 (예: "2 + 3", "10 * 5", "(3 + 4) * 2")
+    
+    Returns:
+        계산 결과 문자열
+    """
     try:
         # 안전한 수학 표현식만 허용
         allowed_chars = set('0123456789+-*/(). ')
@@ -20,8 +29,16 @@ def calculate(expression):
     except Exception as e:
         return f"계산 오류: {str(e)}"
 
-def extract_math_expression(text):
-    """텍스트에서 수학 표현식을 추출하는 도구"""
+@tool
+def extract_math_expression(text: str) -> str:
+    """텍스트에서 수학 표현식을 추출하는 도구
+    
+    Args:
+        text: 수학 표현식을 찾을 텍스트
+    
+    Returns:
+        발견된 수학 표현식들
+    """
     # 간단한 수학 표현식 패턴 매칭
     patterns = [
         r'\d+\s*[\+\-\*\/]\s*\d+',  # 기본 연산
@@ -37,19 +54,7 @@ def extract_math_expression(text):
     return "텍스트에서 수학 표현식을 찾을 수 없습니다."
 
 # 도구들 정의
-calculate_tool = Tool(
-    name="calculate",
-    description="수학 표현식을 계산합니다. 예: 2 + 3, 10 * 5, (3 + 4) * 2",
-    func=calculate
-)
-
-extract_math_tool = Tool(
-    name="extract_math",
-    description="텍스트에서 수학 표현식을 추출합니다.",
-    func=extract_math_expression
-)
-
-tools = [calculate_tool, extract_math_tool]
+tools = [calculate, extract_math_expression]
 
 # 에이전트 생성
 config = Config.get_model_config()

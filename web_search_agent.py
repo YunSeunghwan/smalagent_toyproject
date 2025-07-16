@@ -1,15 +1,24 @@
 import os
 import requests
 from dotenv import load_dotenv
-from smolagents import CodeAgent, Tool, InferenceClientModel
+from smolagents import CodeAgent, InferenceClientModel
+from smolagents.tools import tool
 from config import Config
 import json
 
 # 환경 변수 로드
 load_dotenv()
 
-def search_web(query):
-    """웹에서 정보를 검색하는 도구 (DuckDuckGo API 사용)"""
+@tool
+def search_web(query: str) -> str:
+    """웹에서 정보를 검색하는 도구 (DuckDuckGo API 사용)
+    
+    Args:
+        query: 검색할 질문이나 키워드
+    
+    Returns:
+        검색 결과 문자열
+    """
     try:
         # DuckDuckGo Instant Answer API 사용
         url = "https://api.duckduckgo.com/"
@@ -41,8 +50,16 @@ def search_web(query):
     except Exception as e:
         return f"검색 중 오류가 발생했습니다: {str(e)}"
 
-def get_weather_info(city):
-    """도시의 날씨 정보를 가져오는 도구 (OpenWeatherMap API 사용)"""
+@tool
+def get_weather_info(city: str) -> str:
+    """도시의 날씨 정보를 가져오는 도구 (OpenWeatherMap API 사용)
+    
+    Args:
+        city: 날씨를 조회할 도시 이름
+    
+    Returns:
+        날씨 정보 문자열
+    """
     try:
         # OpenWeatherMap API 키가 있다면 사용, 없으면 기본 정보 제공
         api_key = os.getenv('OPENWEATHER_API_KEY')
@@ -72,8 +89,17 @@ def get_weather_info(city):
     except Exception as e:
         return f"날씨 정보 조회 중 오류가 발생했습니다: {str(e)}"
 
-def translate_text(text, target_lang='en'):
-    """텍스트를 번역하는 도구 (Google Translate API 대체)"""
+@tool
+def translate_text(text: str, target_lang: str = 'en') -> str:
+    """텍스트를 번역하는 도구 (Google Translate API 대체)
+    
+    Args:
+        text: 번역할 텍스트
+        target_lang: 목표 언어 (기본값: 'en')
+    
+    Returns:
+        번역 결과 문자열
+    """
     try:
         # 간단한 번역 예시 (실제로는 Google Translate API나 다른 번역 서비스 사용)
         translations = {
@@ -95,25 +121,7 @@ def translate_text(text, target_lang='en'):
         return f"번역 중 오류가 발생했습니다: {str(e)}"
 
 # 도구들 정의
-web_search_tool = Tool(
-    name="web_search",
-    description="웹에서 정보를 검색합니다. 질문이나 검색어를 입력하세요.",
-    func=search_web
-)
-
-weather_tool = Tool(
-    name="weather",
-    description="도시의 날씨 정보를 조회합니다. 도시 이름을 입력하세요.",
-    func=get_weather_info
-)
-
-translate_tool = Tool(
-    name="translate",
-    description="텍스트를 번역합니다. 번역할 텍스트를 입력하세요.",
-    func=translate_text
-)
-
-tools = [web_search_tool, weather_tool, translate_tool]
+tools = [search_web, get_weather_info, translate_text]
 
 # 에이전트 생성
 config = Config.get_model_config()

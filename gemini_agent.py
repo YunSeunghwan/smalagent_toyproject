@@ -30,7 +30,10 @@ class GeminiAgent:
 """
             
             for tool in self.tools:
-                system_prompt += f"- {tool.name}: {tool.description}\n"
+                # tool이 @tool 데코레이터로 만들어진 경우 name 속성 확인
+                tool_name = getattr(tool, 'name', tool.__name__)
+                tool_desc = getattr(tool, 'description', tool.__doc__ or '설명 없음')
+                system_prompt += f"- {tool_name}: {tool_desc}\n"
             
             system_prompt += """
 사용자의 질문에 답변할 때, 필요하면 적절한 도구를 사용하세요.
@@ -64,8 +67,13 @@ INPUT: 도구에 전달할 입력
                 if tool_name and tool_input:
                     # 도구 실행
                     for tool in self.tools:
-                        if tool.name == tool_name:
-                            tool_result = tool.func(tool_input)
+                        current_tool_name = getattr(tool, 'name', tool.__name__)
+                        if current_tool_name == tool_name:
+                            # @tool 데코레이터로 만들어진 도구는 직접 호출
+                            if hasattr(tool, 'forward'):
+                                tool_result = tool.forward(tool_input)
+                            else:
+                                tool_result = tool(tool_input)
                             return f"도구 '{tool_name}' 실행 결과:\n{tool_result}"
                     
                     return f"도구 '{tool_name}'을 찾을 수 없습니다."
