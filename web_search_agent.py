@@ -1,9 +1,8 @@
 import os
 import requests
 from dotenv import load_dotenv
-from smolagents import Agent, Tool
+from smolagents import CodeAgent, Tool, InferenceClientModel
 from config import Config
-from gemini_agent import create_gemini_agent
 import json
 
 # 환경 변수 로드
@@ -96,38 +95,38 @@ def translate_text(text, target_lang='en'):
         return f"번역 중 오류가 발생했습니다: {str(e)}"
 
 # 도구들 정의
-tools = [
-    Tool(
-        name="web_search",
-        description="웹에서 정보를 검색합니다. 질문이나 검색어를 입력하세요.",
-        func=search_web
-    ),
-    Tool(
-        name="weather",
-        description="도시의 날씨 정보를 조회합니다. 도시 이름을 입력하세요.",
-        func=get_weather_info
-    ),
-    Tool(
-        name="translate",
-        description="텍스트를 번역합니다. 번역할 텍스트를 입력하세요.",
-        func=translate_text
-    )
-]
+web_search_tool = Tool(
+    name="web_search",
+    description="웹에서 정보를 검색합니다. 질문이나 검색어를 입력하세요.",
+    func=search_web
+)
+
+weather_tool = Tool(
+    name="weather",
+    description="도시의 날씨 정보를 조회합니다. 도시 이름을 입력하세요.",
+    func=get_weather_info
+)
+
+translate_tool = Tool(
+    name="translate",
+    description="텍스트를 번역합니다. 번역할 텍스트를 입력하세요.",
+    func=translate_text
+)
+
+tools = [web_search_tool, weather_tool, translate_tool]
 
 # 에이전트 생성
 config = Config.get_model_config()
 if config and config['provider'] == 'gemini':
-    agent = create_gemini_agent(
-        name="정보 검색 도우미",
-        description="웹 검색, 날씨 정보, 번역 등을 도와주는 AI 에이전트입니다.",
-        tools=tools
-    )
+    # Gemini는 직접 사용
+    from gemini_agent import create_gemini_agent
+    agent = create_gemini_agent(tools=tools)
 else:
-    agent = Agent(
-        name="정보 검색 도우미",
-        description="웹 검색, 날씨 정보, 번역 등을 도와주는 AI 에이전트입니다.",
+    # OpenAI 또는 기본 모델 사용
+    model = InferenceClientModel(model_id=config['model'] if config else "meta-llama/Llama-2-7b-chat-hf")
+    agent = CodeAgent(
         tools=tools,
-        model=config['model'] if config else "gpt-3.5-turbo"
+        model=model
     )
 
 def main():

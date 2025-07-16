@@ -1,17 +1,14 @@
 """
-Google Gemini API를 사용하는 SmolAgents 에이전트
+Google Gemini API를 사용하는 간단한 에이전트
 """
 
 import google.generativeai as genai
-from smolagents import Agent, Tool
 from config import Config
 
 class GeminiAgent:
     """Gemini API를 사용하는 에이전트 클래스"""
     
-    def __init__(self, name, description, tools=None):
-        self.name = name
-        self.description = description
+    def __init__(self, tools=None):
         self.tools = tools or []
         
         # Gemini API 설정
@@ -27,7 +24,7 @@ class GeminiAgent:
         try:
             # 도구 설명을 포함한 시스템 프롬프트 생성
             system_prompt = f"""
-당신은 {self.name}입니다. {self.description}
+당신은 도움이 되는 AI 어시스턴트입니다.
 
 사용 가능한 도구들:
 """
@@ -37,39 +34,47 @@ class GeminiAgent:
             
             system_prompt += """
 사용자의 질문에 답변할 때, 필요하면 적절한 도구를 사용하세요.
-도구를 사용할 때는 도구 이름과 필요한 매개변수를 명확히 표시하세요.
+도구를 사용해야 할 때는 다음 형식으로 답변하세요:
+TOOL_USE: tool_name
+INPUT: 도구에 전달할 입력
+
+그렇지 않으면 직접 답변하세요.
 """
             
             # Gemini 모델에 요청
             response = self.model.generate_content([
                 system_prompt,
-                prompt
+                f"사용자 질문: {prompt}"
             ])
             
-            # 도구 사용이 필요한지 확인
             response_text = response.text
             
-            # 도구 사용 처리
-            for tool in self.tools:
-                if tool.name in response_text.lower():
-                    # 도구 실행 로직 (간단한 구현)
-                    tool_result = self._execute_tool(tool, prompt)
-                    response_text += f"\n\n도구 실행 결과: {tool_result}"
+            # 도구 사용이 필요한지 확인
+            if "TOOL_USE:" in response_text:
+                lines = response_text.split('\n')
+                tool_name = None
+                tool_input = None
+                
+                for line in lines:
+                    if line.startswith("TOOL_USE:"):
+                        tool_name = line.replace("TOOL_USE:", "").strip()
+                    elif line.startswith("INPUT:"):
+                        tool_input = line.replace("INPUT:", "").strip()
+                
+                if tool_name and tool_input:
+                    # 도구 실행
+                    for tool in self.tools:
+                        if tool.name == tool_name:
+                            tool_result = tool.func(tool_input)
+                            return f"도구 '{tool_name}' 실행 결과:\n{tool_result}"
+                    
+                    return f"도구 '{tool_name}'을 찾을 수 없습니다."
             
             return response_text
             
         except Exception as e:
             return f"오류가 발생했습니다: {str(e)}"
-    
-    def _execute_tool(self, tool, user_input):
-        """도구 실행"""
-        try:
-            # 간단한 도구 실행 로직
-            # 실제로는 더 정교한 파싱이 필요할 수 있습니다
-            return tool.func(user_input)
-        except Exception as e:
-            return f"도구 실행 오류: {str(e)}"
 
-def create_gemini_agent(name, description, tools):
+def create_gemini_agent(tools):
     """Gemini 에이전트 생성 헬퍼 함수"""
-    return GeminiAgent(name, description, tools) 
+    return GeminiAgent(tools=tools) 

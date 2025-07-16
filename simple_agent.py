@@ -1,8 +1,7 @@
 import os
 from dotenv import load_dotenv
-from smolagents import Agent, Tool
+from smolagents import CodeAgent, Tool, InferenceClientModel
 from config import Config
-from gemini_agent import create_gemini_agent
 import re
 
 # 환경 변수 로드
@@ -38,33 +37,32 @@ def extract_math_expression(text):
     return "텍스트에서 수학 표현식을 찾을 수 없습니다."
 
 # 도구들 정의
-tools = [
-    Tool(
-        name="calculate",
-        description="수학 표현식을 계산합니다. 예: 2 + 3, 10 * 5, (3 + 4) * 2",
-        func=calculate
-    ),
-    Tool(
-        name="extract_math",
-        description="텍스트에서 수학 표현식을 추출합니다.",
-        func=extract_math_expression
-    )
-]
+calculate_tool = Tool(
+    name="calculate",
+    description="수학 표현식을 계산합니다. 예: 2 + 3, 10 * 5, (3 + 4) * 2",
+    func=calculate
+)
+
+extract_math_tool = Tool(
+    name="extract_math",
+    description="텍스트에서 수학 표현식을 추출합니다.",
+    func=extract_math_expression
+)
+
+tools = [calculate_tool, extract_math_tool]
 
 # 에이전트 생성
 config = Config.get_model_config()
 if config and config['provider'] == 'gemini':
-    agent = create_gemini_agent(
-        name="계산 도우미",
-        description="수학 문제를 해결하는 도움이 되는 AI 에이전트입니다.",
-        tools=tools
-    )
+    # Gemini는 직접 사용 (SmolAgents가 공식 지원하지 않을 수 있음)
+    from gemini_agent import create_gemini_agent
+    agent = create_gemini_agent(tools=tools)
 else:
-    agent = Agent(
-        name="계산 도우미",
-        description="수학 문제를 해결하는 도움이 되는 AI 에이전트입니다.",
+    # OpenAI 또는 기본 모델 사용
+    model = InferenceClientModel(model_id=config['model'] if config else "meta-llama/Llama-2-7b-chat-hf")
+    agent = CodeAgent(
         tools=tools,
-        model=config['model'] if config else "gpt-3.5-turbo"
+        model=model
     )
 
 def main():
