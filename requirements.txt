@@ -1,0 +1,5 @@
+smolagents
+openai
+python-dotenv
+streamlit
+google-generativeai 
